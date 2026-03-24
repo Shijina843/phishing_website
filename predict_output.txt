@@ -1,0 +1,48 @@
+======================================================================
+  PHISHING URL DETECTION - PREDICTION RESULTS
+======================================================================
+Date: 2026-03-23 23:53:28
+Model Used: Random Forest
+======================================================================
+
+PHISHING URLs PREDICTIONS:
+======================================================================
+
+[1] Domain: eevee.tv
+    Prediction: Phishing (99.45%)
+
+[2] Domain: appleid.apple.com-sa.pm
+    Prediction: Phishing (100.0%)
+
+[3] Domain: grandcup.xyz
+    Prediction: Phishing (100.0%)
+
+[4] Domain: villa-azzurro.com
+    Prediction: Phishing (100.0%)
+
+[5] Domain: mygpstrip.net
+    Prediction: Phishing (100.0%)
+
+
+LEGITIMATE URLs PREDICTIONS:
+======================================================================
+
+[1] Domain: graphicriver.net
+    Prediction: Legitimate (17.33%)
+
+[2] Domain: ecnavi.jp
+    Prediction: Legitimate (17.91%)
+
+[3] Domain: hubpages.com
+    Prediction: Legitimate (23.05%)
+
+[4] Domain: extratorrent.cc
+    Prediction: Legitimate (15.64%)
+
+[5] Domain: icicibank.com
+    Prediction: Legitimate (15.64%)
+
+
+======================================================================
+RESULTS SUMMARY: 10/10 Predictions Correct (100% Accuracy)
+======================================================================

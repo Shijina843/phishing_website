@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing URL Detection - Check URLs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+        
+        input[type="text"],
+        input[type="url"],
+        textarea {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        input[type="text"]:focus,
+        input[type="url"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result {
+            display: none;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 25px;
+            border-left: 5px solid;
+        }
+        
+        .result.phishing {
+            background-color: #fff3cd;
+            border-color: #ff6b6b;
+        }
+        
+        .result.legitimate {
+            background-color: #d4edda;
+            border-color: #51cf66;
+        }
+        
+        .result-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .result-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+        
+        .result-text h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .result-text p {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .result-meta {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            font-size: 13px;
+        }
+        
+        .result-meta .url-display {
+            word-break: break-all;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .result-meta .features-display {
+            background: rgba(0,0,0,0.05);
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .confidence {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .confidence-bar {
+            flex: 1;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .confidence-text {
+            font-weight: 600;
+            min-width: 50px;
+            text-align: right;
+        }
+        
+        .error {
+            display: none;
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .examples {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .examples h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .example-group {
+            margin-bottom: 15px;
+        }
+        
+        .example-group label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .example-urls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .example-url {
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            word-break: break-all;
+        }
+        
+        .example-url:hover {
+            background: #e8e8e8;
+        }
+        
+        .example-url.phishing {
+            border-left: 3px solid #ff6b6b;
+        }
+        
+        .example-url.legitimate {
+            border-left: 3px solid #51cf66;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> Phishing URL Detector</h1>
+            <p>Check URLs from our dataset or enter extracted features</p>
+            <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                <em> For best accuracy, choose a URL from the examples below</em>
+            </p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('url')"> Check URL</button>
+            <button class="tab" onclick="switchTab('features')"> Enter Features</button>
+        </div>
+        
+        <!-- URL Input Tab -->
+        <div id="url-content" class="tab-content active">
+            <form id="urlForm" onsubmit="handleUrlSubmit(event)">
+                <div class="form-group">
+                    <label for="urlInput">Enter a URL (from examples below)</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="urlInput" 
+                            placeholder="example.com (or select from examples)"
+                            autocomplete="off"
+                        >
+                        <button type="submit" id="checkUrlBtn">Check</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Features Input Tab -->
+        <div id="features-content" class="tab-content">
+            <form id="featuresForm" onsubmit="handleFeaturesSubmit(event)">
+                <div class="form-group">
+                    <label for="featuresInput">Enter Features (JSON format)</label>
+                    <textarea 
+                        id="featuresInput" 
+                        placeholder='{"Have_IP": 1, "Have_At": 0, "URL_Length": 1, ...}'
+                        autocomplete="off"
+                    ></textarea>
+                    <button type="submit" id="checkFeaturesBtn" style="margin-top: 10px;">Check</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="result" id="result">
+            <div class="result-content">
+                <div class="result-icon" id="resultIcon"></div>
+                <div class="result-text">
+                    <h3 id="resultLabel"></h3>
+                    <p id="resultModel">Model: Random Forest</p>
+                    <div class="confidence">
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidenceFill"></div>
+                        </div>
+                        <span class="confidence-text" id="confidenceText"></span>
+                    </div>
+                    <div class="result-meta" id="resultMeta"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="examples" id="examples" style="display: none;">
+            <h3> Try Example URLs</h3>
+            <div class="example-group">
+                <label>Phishing Examples:</label>
+                <div class="example-urls" id="phishingExamples"></div>
+            </div>
+            <div class="example-group">
+                <label>Legitimate Examples:</label>
+                <div class="example-urls" id="legitimateExamples"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Model Accuracy: 85.8% | Trained on 10,000 URLs</p>
+        </div>
+    </div>
+    
+    <script>
+        // Load examples on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExamples();
+        });
+        
+        function switchTab(tab) {
+            // Hide all content
+            document.getElementById('url-content').classList.remove('active');
+            document.getElementById('features-content').classList.remove('active');
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            
+            // Show selected content and activate tab
+            document.getElementById(tab + '-content').classList.add('active');
+            event.target.classList.add('active');
+            
+            // Hide previous results
+            hideResult();
+            hideError();
+        }
+        
+        function loadExamples() {
+            document.getElementById('examples').style.display = 'block';
+            fetch('/api/example')
+                .then(response => response.json())
+                .then(data => {
+                    // Display phishing examples
+                    const phishingDiv = document.getElementById('phishingExamples');
+                    data.phishing_examples.forEach(url => {
+                        const div = document.createElement('div');
+                        div.className = 'example-url phishing';
+                        div.textContent = url;
+                        div.onclick = () => {
+                            document.getElementById('urlInput').value = 'https://' + url;
+                            document.querySelector('button[onclick="switchTab(\'url\')"]').click();
+                        };
+                        phishingDiv.appendChild(div);
+                    });
+                    
+                    // Display legitimate examples
+                    const legitDiv = document.getElementById('legitimateExamples');
+                    data.legitimate_examples.forEach(url => {
+                        const div = document.createElement('div');
+                        div.className = 'example-url legitimate';
+                        div.textContent = url;
+                        div.onclick = () => {
+                            document.getElementById('urlInput').value = 'https://' + url;
+                            document.querySelector('button[onclick="switchTab(\'url\')"]').click();
+                        };
+                        legitDiv.appendChild(div);
+                    });
+                })
+                .catch(error => console.error('Error loading examples:', error));
+        }
+        
+        function handleUrlSubmit(event) {
+            event.preventDefault();
+            
+            let url = document.getElementById('urlInput').value.trim();
+            if (!url) {
+                showError('Please enter a URL');
+                return;
+            }
+            
+            // Remove https:// or http:// if user added it
+            url = url.replace(/^https?:\/\//, '').trim();
+            
+            hideResult();
+            hideError();
+            document.getElementById('loading').style.display = 'block';
+            
+            fetch('/api/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.success) {
+                    displayUrlResult(data);
+                } else {
+                    showError(data.error || 'Prediction failed');
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                showError('Error: ' + error.message);
+            });
+        }
+        
+        function handleFeaturesSubmit(event) {
+            event.preventDefault();
+            
+            const input = document.getElementById('featuresInput').value.trim();
+            if (!input) {
+                showError('Please enter features');
+                return;
+            }
+            
+            hideResult();
+            hideError();
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                const features = JSON.parse(input);
+                
+                fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ features: features })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    if (data.success) {
+                        displayFeaturesResult(data);
+                    } else {
+                        showError(data.error || 'Prediction failed');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    showError('Error: ' + error.message);
+                });
+            } catch (e) {
+                document.getElementById('loading').style.display = 'none';
+                showError('Invalid JSON format. Please check your input.');
+            }
+        }
+        
+        function displayUrlResult(data) {
+            const isPhishing = data.is_phishing;
+            const label = data.prediction;
+            const confidence = data.confidence;
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = isPhishing ? 'result phishing' : 'result legitimate';
+            
+            document.getElementById('resultIcon').textContent = isPhishing ? '⚠️' : '✅';
+            document.getElementById('resultLabel').textContent = label;
+            document.getElementById('confidenceText').textContent = confidence + '%';
+            
+            // Display URL and extracted features
+            const metaDiv = document.getElementById('resultMeta');
+            let metaHTML = `
+                <div class="url-display"><strong>URL:</strong> ${data.url}</div>
+                <div><strong>Extracted Features:</strong></div>
+                <div class="features-display">
+            `;
+            for (const [key, value] of Object.entries(data.extracted_features)) {
+                metaHTML += `<div>${key}: ${value}</div>`;
+            }
+            metaHTML += '</div>';
+            metaDiv.innerHTML = metaHTML;
+            
+            const fill = document.getElementById('confidenceFill');
+            fill.style.width = '0%';
+            setTimeout(() => {
+                fill.style.width = confidence + '%';
+            }, 100);
+            
+            resultDiv.style.display = 'block';
+        }
+        
+        function displayFeaturesResult(data) {
+            const isPhishing = data.is_phishing;
+            const label = data.prediction;
+            const confidence = data.confidence;
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = isPhishing ? 'result phishing' : 'result legitimate';
+            
+            document.getElementById('resultIcon').textContent = isPhishing ? '⚠️' : '✅';
+            document.getElementById('resultLabel').textContent = label;
+            document.getElementById('resultModel').textContent = 'Model: ' + data.primary_model;
+            document.getElementById('confidenceText').textContent = confidence + '%';
+            document.getElementById('resultMeta').innerHTML = '';
+            
+            const fill = document.getElementById('confidenceFill');
+            fill.style.width = '0%';
+            setTimeout(() => {
+                fill.style.width = confidence + '%';
+            }, 100);
+            
+            resultDiv.style.display = 'block';
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        function hideResult() {
+            document.getElementById('result').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
