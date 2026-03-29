@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# Logs and debug output
+*.log
+*.out
+*.err
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor settings
+.vscode/
+.idea/
+.vs/
+*.code-workspace
+
+# Data and model artifacts
+DataFiles/
+models/
+predict_output.txt
+Result image/
+
+# Tests cache
+.pytest_cache/
+.coverage
+htmlcov/
