@@ -144,22 +144,28 @@ def predict():
         
         confidence = float(y_prob) * 100
         
+        # 3.5 Re-enable WHOIS just for UI cosmetics (Does not affect the ML Model)
+        domain_for_whois = feats.get('_domain', "")
+        whois_data = get_whois_features(domain_for_whois) if domain_for_whois else {}
+        
+        # --- NEW OVERRIDE: WHOIS Failure Penalty ---
+        # If WHOIS fails and it's NOT a mathematically whitelisted domain
+        if whois_data.get('whois_status', 'failed') == 'failed' and not feats.get('_whitelisted', False):
+            confidence += 48.0
+            confidence = min(confidence, 100.0) # Cap at 100%
+            flags.append("WHOIS Data Hidden/Blocked")
+            
         # 3. Verdict threshold (Layer 9 score zones)
         if feats.get('_whitelisted', False):
             verdict = "LEGITIMATE"
             confidence = 0.0 # Threat score is 0 if mathematically whitelisted
         else:
-            if y_prob < 0.40:
+            if confidence < 40.0:
                 verdict = "LEGITIMATE"
-            elif y_prob <= 0.65:
-                verdict = "SUSPICIOUS"
+            elif confidence <= 65.0:
+                verdict = "PARTIALLY VULNERABLE"
             else:
                 verdict = "PHISHING"
-                
-        
-        # 3.5 Re-enable WHOIS just for UI cosmetics (Does not affect the ML Model)
-        domain_for_whois = feats.get('_domain', "")
-        whois_data = get_whois_features(domain_for_whois) if domain_for_whois else {}
         
         # Prepare response
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
