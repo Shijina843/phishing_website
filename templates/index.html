@@ -3,434 +3,458 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phishing URL Detection - Check URLs</title>
+    <title>Phishing URL Detection - AI Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-main: #060913;
+            --bg-card: rgba(11, 20, 33, 0.7);
+            --bg-card-hover: #121f33;
+            --text-main: #ffffff;
+            --text-muted: #8b9eb5;
+            --teal-bright: #2ed5c1;
+            --teal-soft: rgba(46, 213, 193, 0.15);
+            --border-color: #1a2a3a;
+            --lime-bg: #dcfd71;
+            --lime-text: #060913;
+            --grid-color: rgba(255, 255, 255, 0.03);
+            --phishing-color: #ff4b4b;
+            --legit-color: #2ed5c1;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 40px 20px;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 60px 60px;
+            background-position: center top;
         }
-        
+
+        /* Ambient glow effect */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1200px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(46, 213, 193, 0.1) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
         .container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 700px;
             width: 100%;
-            padding: 40px;
+            max-width: 900px;
+            position: relative;
+            z-index: 10;
         }
-        
-        .header {
+
+        /* Minimal Header */
+        .page-header {
             text-align: center;
             margin-bottom: 40px;
         }
-        
-        .header h1 {
-            color: #333;
-            font-size: 28px;
+
+        .logo-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--teal-bright);
+            border-radius: 50%;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(46, 213, 193, 0.3);
+        }
+        .logo-mark::after {
+            content: '';
+            width: 16px;
+            height: 16px;
+            background: var(--bg-main);
+            border-radius: 50%;
+        }
+
+        h1 {
+            font-size: 34px;
+            font-weight: 600;
+            letter-spacing: -1px;
             margin-bottom: 10px;
         }
-        
-        .header p {
-            color: #666;
-            font-size: 14px;
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 400;
         }
-        
+
+        /* Main Glass Card */
+        .glass-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            transition: all 0.4s ease;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(46, 213, 193, 0.3);
+        }
+
+        /* Tabs Styling */
         .tabs {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 30px;
-            border-bottom: 2px solid #e0e0e0;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px;
+            border-radius: 14px;
         }
-        
+
         .tab {
-            padding: 10px 20px;
-            background: none;
+            flex: 1;
+            padding: 12px;
+            background: transparent;
             border: none;
-            color: #999;
+            color: var(--text-muted);
+            border-radius: 10px;
             cursor: pointer;
+            font-family: inherit;
             font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab.active {
+            background: var(--bg-main);
+            color: var(--teal-bright);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Forms Layout */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: slideUp 0.4s ease-out forwards; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .form-group { flex: 1; }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             font-weight: 600;
-            border-bottom: 3px solid transparent;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 15px;
             transition: all 0.3s;
         }
-        
-        .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--teal-bright);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 3px rgba(46, 213, 193, 0.1);
         }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .input-wrapper {
-            display: flex;
+
+        textarea { min-height: 120px; resize: vertical; }
+
+        .submit-btn {
+            padding: 16px 35px;
+            background: var(--teal-bright);
+            color: var(--bg-main);
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
             gap: 10px;
         }
-        
-        input[type="text"],
-        input[type="url"],
-        textarea {
-            flex: 1;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        input[type="text"]:focus,
-        input[type="url"]:focus,
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-        
-        button {
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        button:hover {
+
+        .submit-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 10px 25px rgba(46, 213, 193, 0.3);
+            filter: brightness(1.1);
         }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
+
+        /* Results Display */
         .loading {
             display: none;
             text-align: center;
-            margin: 20px 0;
+            margin: 30px 0;
+            color: var(--teal-bright);
+            font-size: 14px;
+            font-weight: 500;
         }
         
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 3px solid rgba(46,213,193,0.1);
+            border-top: 3px solid var(--teal-bright);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
+            display: inline-block;
+            margin-bottom: 10px;
         }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .error {
+            display: none;
+            background: rgba(255, 75, 75, 0.1);
+            color: var(--phishing-color);
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid var(--phishing-color);
+            margin: 25px 0;
+            font-size: 14px;
         }
-        
+
         .result {
             display: none;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 25px;
-            border-left: 5px solid;
+            margin-top: 30px;
+            padding: 30px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            animation: slideUp 0.5s ease;
         }
+
+        .result.phishing { border-color: rgba(255, 75, 75, 0.3); border-left: 6px solid var(--phishing-color); }
+        .result.legitimate { border-color: rgba(46, 213, 193, 0.3); border-left: 6px solid var(--teal-bright); }
+
+        .result-head { display: flex; align-items: center; gap: 20px; margin-bottom: 25px; }
+        .result-icon { font-size: 36px; line-height: 1; }
+        .result-title h3 { font-size: 24px; font-weight: 700; margin-bottom: 2px; }
+        .result-title p { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+        .confidence-box { margin-bottom: 25px; }
+        .conf-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; font-weight: 600; }
+        .conf-bar { height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; }
+        .conf-fill { height: 100%; border-radius: 10px; width: 0%; transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
         
-        .result.phishing {
-            background-color: #fff3cd;
-            border-color: #ff6b6b;
+        .result.phishing .conf-fill { background: var(--phishing-color); box-shadow: 0 0 15px var(--phishing-color); }
+        .result.legitimate .conf-fill { background: var(--teal-bright); box-shadow: 0 0 15px var(--teal-bright); }
+
+        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .meta-url { font-family: monospace; font-size: 13px; color: var(--text-muted); padding: 12px; background: rgba(0,0,0,0.4); border-radius: 8px; word-break: break-all; }
+        .meta-features { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; font-size: 11px; max-height: 150px; overflow-y: auto; padding-right: 10px; }
+        .meta-features div { padding: 6px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.02); color: #a0b2c6; }
+
+        /* Integrated Examples */
+        .examples-section {
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border-color);
         }
-        
-        .result.legitimate {
-            background-color: #d4edda;
-            border-color: #51cf66;
-        }
-        
-        .result-content {
+
+        .examples-header {
             display: flex;
             align-items: center;
             gap: 15px;
+            margin-bottom: 20px;
         }
-        
-        .result-icon {
-            font-size: 32px;
-            flex-shrink: 0;
+
+        .examples-badge {
+            background: var(--lime-bg);
+            color: var(--lime-text);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
         }
-        
-        .result-text h3 {
-            font-size: 18px;
-            margin-bottom: 5px;
-        }
-        
-        .result-text p {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .result-meta {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(0,0,0,0.1);
-            font-size: 13px;
-        }
-        
-        .result-meta .url-display {
-            word-break: break-all;
-            color: #666;
-            margin-bottom: 10px;
-        }
-        
-        .result-meta .features-display {
-            background: rgba(0,0,0,0.05);
-            padding: 10px;
-            border-radius: 4px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-        
-        .confidence {
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .confidence-bar {
-            flex: 1;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-        
-        .confidence-text {
-            font-weight: 600;
-            min-width: 50px;
-            text-align: right;
-        }
-        
-        .error {
-            display: none;
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 20px;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .examples {
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 2px solid #e0e0e0;
-        }
-        
-        .examples h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
-        
-        .example-group {
-            margin-bottom: 15px;
-        }
-        
-        .example-group label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
-        }
-        
-        .example-urls {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .example-url {
-            padding: 8px 12px;
-            background: #f5f5f5;
-            border-radius: 4px;
+
+        .examples-header h4 { font-size: 16px; font-weight: 600; }
+
+        .example-list { display: flex; flex-wrap: wrap; gap: 10px; }
+        .example-chip {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            color: var(--text-muted);
             font-size: 12px;
             cursor: pointer;
-            transition: background 0.2s;
-            word-break: break-all;
+            transition: all 0.2s;
         }
-        
-        .example-url:hover {
-            background: #e8e8e8;
+        .example-chip:hover {
+            border-color: var(--teal-bright);
+            color: var(--text-main);
+            transform: scale(1.02);
+            background: rgba(46, 213, 193, 0.05);
         }
-        
-        .example-url.phishing {
-            border-left: 3px solid #ff6b6b;
-        }
-        
-        .example-url.legitimate {
-            border-left: 3px solid #51cf66;
-        }
-        
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            color: #999;
-            font-size: 12px;
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        @media (max-width: 600px) {
+            .glass-card { padding: 25px; }
+            h1 { font-size: 28px; }
+            .submit-btn { width: 100%; justify-content: center; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1> Phishing URL Detector</h1>
-            <p>Check URLs from our dataset or enter extracted features</p>
-            <p style="font-size: 12px; color: #999; margin-top: 10px;">
-                <em> For best accuracy, choose a URL from the examples below</em>
-            </p>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab active" onclick="switchTab('url')"> Check URL</button>
-            <button class="tab" onclick="switchTab('features')"> Enter Features</button>
-        </div>
-        
-        <!-- URL Input Tab -->
-        <div id="url-content" class="tab-content active">
-            <form id="urlForm" onsubmit="handleUrlSubmit(event)">
-                <div class="form-group">
-                    <label for="urlInput">Enter a URL (from examples below)</label>
-                    <div class="input-wrapper">
-                        <input 
-                            type="text" 
-                            id="urlInput" 
-                            placeholder="example.com (or select from examples)"
-                            autocomplete="off"
-                        >
-                        <button type="submit" id="checkUrlBtn">Check</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Features Input Tab -->
-        <div id="features-content" class="tab-content">
-            <form id="featuresForm" onsubmit="handleFeaturesSubmit(event)">
-                <div class="form-group">
-                    <label for="featuresInput">Enter Features (JSON format)</label>
-                    <textarea 
-                        id="featuresInput" 
-                        placeholder='{"Have_IP": 1, "Have_At": 0, "URL_Length": 1, ...}'
-                        autocomplete="off"
-                    ></textarea>
-                    <button type="submit" id="checkFeaturesBtn" style="margin-top: 10px;">Check</button>
-                </div>
-            </form>
-        </div>
-        
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Analyzing...</p>
-        </div>
-        
-        <div class="error" id="error"></div>
-        
-        <div class="result" id="result">
-            <div class="result-content">
-                <div class="result-icon" id="resultIcon"></div>
-                <div class="result-text">
-                    <h3 id="resultLabel"></h3>
-                    <p id="resultModel">Model: Random Forest</p>
-                    <div class="confidence">
-                        <div class="confidence-bar">
-                            <div class="confidence-fill" id="confidenceFill"></div>
-                        </div>
-                        <span class="confidence-text" id="confidenceText"></span>
-                    </div>
-                    <div class="result-meta" id="resultMeta"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="examples" id="examples" style="display: none;">
-            <h3> Try Example URLs</h3>
-            <div class="example-group">
-                <label>Phishing Examples:</label>
-                <div class="example-urls" id="phishingExamples"></div>
-            </div>
-            <div class="example-group">
-                <label>Legitimate Examples:</label>
-                <div class="example-urls" id="legitimateExamples"></div>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>Model Accuracy: 85.8% | Trained on 10,000 URLs</p>
-        </div>
-    </div>
     
+    <div class="container">
+        
+        <header class="page-header">
+            <div class="logo-mark"></div>
+            <h1>Phishing URL Detector</h1>
+            <p class="subtitle">AI-powered security verification system</p>
+        </header>
+
+        <main class="glass-card">
+            
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('url')">URL Analysis</button>
+                <button class="tab" onclick="switchTab('features')">Feature Analysis</button>
+            </div>
+
+            <!-- URL Input -->
+            <div id="url-content" class="tab-content active">
+                <form id="urlForm" onsubmit="handleUrlSubmit(event)">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="urlInput">Target Domain or URL</label>
+                        <input type="text" id="urlInput" placeholder="Enter URL (e.g. secure-login.com)" autocomplete="off">
+                    </div>
+                    <button type="submit" id="checkUrlBtn" class="submit-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Analyze URL
+                    </button>
+                </form>
+            </div>
+
+            <!-- Features Input -->
+            <div id="features-content" class="tab-content">
+                <form id="featuresForm" onsubmit="handleFeaturesSubmit(event)">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="featuresInput">Raw Feature Set (JSON)</label>
+                        <textarea id="featuresInput" placeholder='{"Have_IP": 1, "Have_At": 0, "URL_Length": 1, ...}' autocomplete="off"></textarea>
+                    </div>
+                    <button type="submit" id="checkFeaturesBtn" class="submit-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M2 12h20"/></svg>
+                        Evaluate Features
+                    </button>
+                </form>
+            </div>
+
+            <!-- States -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Running Neural Network Analysis...</p>
+            </div>
+            
+            <div class="error" id="error"></div>
+
+            <!-- Result Pane -->
+            <div class="result" id="result">
+                <div class="result-head">
+                    <div class="result-icon" id="resultIcon"></div>
+                    <div class="result-title">
+                        <h3 id="resultLabel">Analysis Result</h3>
+                        <p id="resultModel">Model ID: Random Forest Classifier</p>
+                    </div>
+                </div>
+                
+                <div class="confidence-box">
+                    <div class="conf-label">
+                        <span>Threat Confidence</span>
+                        <span id="confidenceText">0%</span>
+                    </div>
+                    <div class="conf-bar">
+                        <div class="conf-fill" id="confidenceFill"></div>
+                    </div>
+                </div>
+
+                <div id="resultMeta" class="meta-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Integrated Examples Section -->
+            <section class="examples-section" id="examples" style="display: none;">
+                <div class="examples-header">
+                    <span class="examples-badge">Training Data</span>
+                    <h4>Verification Samples</h4>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; font-weight: 700;">Simulated Threats:</p>
+                    <div class="example-list" id="phishingExamples"></div>
+                </div>
+                
+                <div>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; font-weight: 700;">Verified Assets:</p>
+                    <div class="example-list" id="legitimateExamples"></div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer style="text-align: center; margin-top: 30px; color: var(--text-muted); font-size: 12px;">
+            <p>AI Phishing Guard &bull; Security Model v2.4 &bull; Accuracy: 85.8%</p>
+        </footer>
+
+    </div>
+
+    <!-- JS Logic -->
     <script>
-        // Load examples on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadExamples();
-        });
+        document.addEventListener('DOMContentLoaded', loadExamples);
         
         function switchTab(tab) {
-            // Hide all content
-            document.getElementById('url-content').classList.remove('active');
-            document.getElementById('features-content').classList.remove('active');
-            
-            // Remove active class from all tabs
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            
-            // Show selected content and activate tab
             document.getElementById(tab + '-content').classList.add('active');
             event.target.classList.add('active');
-            
-            // Hide previous results
             hideResult();
             hideError();
         }
@@ -438,189 +462,102 @@
         function loadExamples() {
             document.getElementById('examples').style.display = 'block';
             fetch('/api/example')
-                .then(response => response.json())
+                .then(r => r.json())
                 .then(data => {
-                    // Display phishing examples
-                    const phishingDiv = document.getElementById('phishingExamples');
+                    const pList = document.getElementById('phishingExamples');
                     data.phishing_examples.forEach(url => {
-                        const div = document.createElement('div');
-                        div.className = 'example-url phishing';
-                        div.textContent = url;
-                        div.onclick = () => {
+                        const chip = document.createElement('div');
+                        chip.className = 'example-chip';
+                        chip.textContent = url.length > 35 ? url.substring(0, 32) + '...' : url;
+                        chip.onclick = () => { 
                             document.getElementById('urlInput').value = 'https://' + url;
-                            document.querySelector('button[onclick="switchTab(\'url\')"]').click();
+                            document.querySelector('.tab:nth-child(1)').click();
                         };
-                        phishingDiv.appendChild(div);
+                        pList.appendChild(chip);
                     });
                     
-                    // Display legitimate examples
-                    const legitDiv = document.getElementById('legitimateExamples');
+                    const lList = document.getElementById('legitimateExamples');
                     data.legitimate_examples.forEach(url => {
-                        const div = document.createElement('div');
-                        div.className = 'example-url legitimate';
-                        div.textContent = url;
-                        div.onclick = () => {
+                        const chip = document.createElement('div');
+                        chip.className = 'example-chip';
+                        chip.textContent = url;
+                        chip.onclick = () => { 
                             document.getElementById('urlInput').value = 'https://' + url;
-                            document.querySelector('button[onclick="switchTab(\'url\')"]').click();
+                            document.querySelector('.tab:nth-child(1)').click();
                         };
-                        legitDiv.appendChild(div);
+                        lList.appendChild(chip);
                     });
                 })
-                .catch(error => console.error('Error loading examples:', error));
+                .catch(e => console.error('E:', e));
         }
         
-        function handleUrlSubmit(event) {
-            event.preventDefault();
-            
-            let url = document.getElementById('urlInput').value.trim();
-            if (!url) {
-                showError('Please enter a URL');
-                return;
-            }
-            
-            // Remove https:// or http:// if user added it
-            url = url.replace(/^https?:\/\//, '').trim();
-            
-            hideResult();
-            hideError();
-            document.getElementById('loading').style.display = 'block';
-            
+        function handleUrlSubmit(e) {
+            e.preventDefault();
+            let url = document.getElementById('urlInput').value.trim().replace(/^https?:\/\//, '');
+            if (!url) { showError('URL is required'); return; }
+            startLoading();
             fetch('/api/predict', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ url: url })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
             })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('loading').style.display = 'none';
-                
-                if (data.success) {
-                    displayUrlResult(data);
-                } else {
-                    showError(data.error || 'Prediction failed');
-                }
-            })
-            .catch(error => {
-                document.getElementById('loading').style.display = 'none';
-                showError('Error: ' + error.message);
-            });
+            .then(r => r.json())
+            .then(data => { stopLoading(); if (data.success) displayUrlResult(data); else showError(data.error); })
+            .catch(err => { stopLoading(); showError(err.message); });
         }
         
-        function handleFeaturesSubmit(event) {
-            event.preventDefault();
-            
+        function handleFeaturesSubmit(e) {
+            e.preventDefault();
             const input = document.getElementById('featuresInput').value.trim();
-            if (!input) {
-                showError('Please enter features');
-                return;
-            }
-            
-            hideResult();
-            hideError();
-            document.getElementById('loading').style.display = 'block';
-            
+            if (!input) { showError('Features JSON is required'); return; }
             try {
                 const features = JSON.parse(input);
-                
+                startLoading();
                 fetch('/api/predict', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ features: features })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ features })
                 })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('loading').style.display = 'none';
-                    
-                    if (data.success) {
-                        displayFeaturesResult(data);
-                    } else {
-                        showError(data.error || 'Prediction failed');
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('loading').style.display = 'none';
-                    showError('Error: ' + error.message);
-                });
-            } catch (e) {
-                document.getElementById('loading').style.display = 'none';
-                showError('Invalid JSON format. Please check your input.');
-            }
+                .then(r => r.json())
+                .then(data => { stopLoading(); if (data.success) displayFeaturesResult(data); else showError(data.error); })
+                .catch(err => { stopLoading(); showError(err.message); });
+            } catch (e) { showError('Invalid JSON format'); }
         }
-        
+
         function displayUrlResult(data) {
-            const isPhishing = data.is_phishing;
-            const label = data.prediction;
-            const confidence = data.confidence;
+            const isP = data.is_phishing;
+            const resDiv = document.getElementById('result');
+            resDiv.className = isP ? 'result phishing' : 'result legitimate';
+            document.getElementById('resultIcon').innerHTML = isP ? '⚠️' : '✅';
+            document.getElementById('resultLabel').textContent = data.prediction;
+            document.getElementById('confidenceText').textContent = data.confidence + '%';
             
-            const resultDiv = document.getElementById('result');
-            resultDiv.className = isPhishing ? 'result phishing' : 'result legitimate';
+            let html = `<div class="meta-url">${data.url}</div><p style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:10px;">Input Features</p><div class="meta-features">`;
+            for (const [k, v] of Object.entries(data.extracted_features)) { html += `<div><strong>${k}:</strong> ${v}</div>`; }
+            document.getElementById('resultMeta').innerHTML = html + `</div>`;
             
-            document.getElementById('resultIcon').textContent = isPhishing ? '⚠️' : '✅';
-            document.getElementById('resultLabel').textContent = label;
-            document.getElementById('confidenceText').textContent = confidence + '%';
-            
-            // Display URL and extracted features
-            const metaDiv = document.getElementById('resultMeta');
-            let metaHTML = `
-                <div class="url-display"><strong>URL:</strong> ${data.url}</div>
-                <div><strong>Extracted Features:</strong></div>
-                <div class="features-display">
-            `;
-            for (const [key, value] of Object.entries(data.extracted_features)) {
-                metaHTML += `<div>${key}: ${value}</div>`;
-            }
-            metaHTML += '</div>';
-            metaDiv.innerHTML = metaHTML;
-            
-            const fill = document.getElementById('confidenceFill');
-            fill.style.width = '0%';
-            setTimeout(() => {
-                fill.style.width = confidence + '%';
-            }, 100);
-            
-            resultDiv.style.display = 'block';
+            resDiv.style.display = 'block';
+            setTimeout(() => document.getElementById('confidenceFill').style.width = data.confidence + '%', 50);
         }
-        
+
         function displayFeaturesResult(data) {
-            const isPhishing = data.is_phishing;
-            const label = data.prediction;
-            const confidence = data.confidence;
-            
-            const resultDiv = document.getElementById('result');
-            resultDiv.className = isPhishing ? 'result phishing' : 'result legitimate';
-            
-            document.getElementById('resultIcon').textContent = isPhishing ? '⚠️' : '✅';
-            document.getElementById('resultLabel').textContent = label;
-            document.getElementById('resultModel').textContent = 'Model: ' + data.primary_model;
-            document.getElementById('confidenceText').textContent = confidence + '%';
+            const isP = data.is_phishing;
+            const resDiv = document.getElementById('result');
+            resDiv.className = isP ? 'result phishing' : 'result legitimate';
+            document.getElementById('resultIcon').innerHTML = isP ? '⚠️' : '✅';
+            document.getElementById('resultLabel').textContent = data.prediction;
+            document.getElementById('resultModel').textContent = 'Source: ' + data.primary_model;
+            document.getElementById('confidenceText').textContent = data.confidence + '%';
             document.getElementById('resultMeta').innerHTML = '';
-            
-            const fill = document.getElementById('confidenceFill');
-            fill.style.width = '0%';
-            setTimeout(() => {
-                fill.style.width = confidence + '%';
-            }, 100);
-            
-            resultDiv.style.display = 'block';
+            resDiv.style.display = 'block';
+            setTimeout(() => document.getElementById('confidenceFill').style.width = data.confidence + '%', 50);
         }
-        
-        function showError(message) {
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-        
-        function hideError() {
-            document.getElementById('error').style.display = 'none';
-        }
-        
-        function hideResult() {
-            document.getElementById('result').style.display = 'none';
-        }
+
+        function startLoading() { hideResult(); hideError(); document.getElementById('loading').style.display = 'block'; }
+        function stopLoading() { document.getElementById('loading').style.display = 'none'; }
+        function showError(m) { const e = document.getElementById('error'); e.textContent = m; e.style.display = 'block'; }
+        function hideError() { document.getElementById('error').style.display = 'none'; }
+        function hideResult() { document.getElementById('result').style.display = 'none'; document.getElementById('confidenceFill').style.width = '0%'; }
     </script>
 </body>
 </html>
