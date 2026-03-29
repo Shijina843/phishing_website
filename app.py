@@ -72,20 +72,17 @@ def compute_risk_flags(features: dict) -> list[str]:
         # Whitelist hit -> clear all flags
         return flags
         
-    if features.get('domain_age_days', -1) != -1 and features.get('domain_age_days', 999) < 30:
-        flags.append("Domain too new")
-        
-    if features.get('has_mx_record', 0) == 0:
-        flags.append("No MX record")
-        
-    if features.get('tld_suspicious', 0) == 1:
+    if features.get('suspecious_tld', 0) == 1:
         flags.append("Suspicious TLD")
         
-    if features.get('has_ip', 0) == 1:
+    if features.get('ip', 0) == 1:
         flags.append("IP used instead of domain")
         
-    if features.get('whois_available', -1) == 0:
-        flags.append("WHOIS data unavailable")
+    if features.get('phish_hints', 0) >= 2:
+        flags.append("High number of suspicious keywords")
+
+    if features.get('ratio_digits_url', 0) > 0.2:
+        flags.append("High ratio of digits in URL")
         
     return flags
 
@@ -149,7 +146,7 @@ def predict():
         # 3. Verdict threshold (Layer 9 score zones)
         if feats.get('_whitelisted', False):
             verdict = "LEGITIMATE"
-            confidence = 100.0 if y_prob < 0.5 else 0.0 # Just cosmetic
+            confidence = 0.0 # Threat score is 0 if mathematically whitelisted
         else:
             if y_prob < 0.40:
                 verdict = "LEGITIMATE"
@@ -164,14 +161,14 @@ def predict():
         response_data = {
             "url": url,
             "verdict": verdict,
-            "confidence": round((confidence if verdict != "LEGITIMATE" or feats.get('_whitelisted') else (100 - confidence)), 2),
+            "confidence": round(confidence, 2),
             "timestamp": timestamp,
             "risk_flags": flags,
             "whois_summary": {
-                "domain_age": feats.get('domain_age_days', 'Unknown') if feats.get('domain_age_days', -1) != -1 else 'Unknown',
-                "registrar": feats.get('registrar_name', 'Unknown'),
-                "country": feats.get('country', 'Unknown'),
-                "data_source": feats.get('data_source', 'unavailable')
+                "domain_age": 'Unknown (Disabled)',
+                "registrar": 'Unknown (Disabled)',
+                "country": 'Unknown (Disabled)',
+                "data_source": 'unavailable'
             }
         }
         
