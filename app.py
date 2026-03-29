@@ -20,6 +20,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model'))
 
 from feature_extractor import extract_features, MODEL_FEATURE_COLUMNS, CONTINUOUS_COLUMNS
+from whois_intel import get_whois_features
 
 app = Flask(__name__)
 
@@ -155,6 +156,11 @@ def predict():
             else:
                 verdict = "PHISHING"
                 
+        
+        # 3.5 Re-enable WHOIS just for UI cosmetics (Does not affect the ML Model)
+        domain_for_whois = feats.get('_domain', "")
+        whois_data = get_whois_features(domain_for_whois) if domain_for_whois else {}
+        
         # Prepare response
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
@@ -164,11 +170,12 @@ def predict():
             "confidence": round(confidence, 2),
             "timestamp": timestamp,
             "risk_flags": flags,
+            "parameters": {k: v for k, v in feats.items() if not k.startswith('_')},
             "whois_summary": {
-                "domain_age": 'Unknown (Disabled)',
-                "registrar": 'Unknown (Disabled)',
-                "country": 'Unknown (Disabled)',
-                "data_source": 'unavailable'
+                "domain_age": whois_data.get('domain_age_days', -1) if whois_data.get('domain_age_days', -1) != -1 else 'Unknown',
+                "registrar": whois_data.get('registrar_name', 'Unknown'),
+                "country": whois_data.get('country', 'Unknown'),
+                "data_source": 'Live WHOIS Lookup'
             }
         }
         

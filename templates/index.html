@@ -86,7 +86,33 @@
                 </div>
             </div>
 
-            <div class="p-6 md:p-8">
+            <div class="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Col: WHOIS Data -->
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-b border-slate-700 pb-2">
+                        <i class="fa-solid fa-globe text-cyan-400"></i> Domain Intelligence
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50 border-dashed">
+                            <span class="text-slate-400"><i class="fa-solid fa-calendar-days w-5"></i> Age (Days)</span>
+                            <span id="domain-age" class="font-medium text-slate-200">-</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50 border-dashed">
+                            <span class="text-slate-400"><i class="fa-solid fa-building w-5"></i> Registrar</span>
+                            <span id="domain-registrar" class="font-medium text-slate-200 text-right max-w-[200px] truncate">-</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50 border-dashed">
+                            <span class="text-slate-400"><i class="fa-solid fa-flag w-5"></i> Country</span>
+                            <span id="domain-country" class="font-medium text-slate-200">-</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50 border-dashed">
+                            <span class="text-slate-400"><i class="fa-solid fa-database w-5"></i> Source</span>
+                            <span id="domain-source" class="px-2 py-1 bg-slate-700 rounded text-xs font-medium uppercase">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Col: Risk Flags -->
                 <div>
                     <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-b border-slate-700 pb-2">
                         <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Risk Flags Triggered
@@ -94,6 +120,16 @@
                     <ul id="risk-flags-list" class="space-y-3">
                         <!-- Flags injected here -->
                     </ul>
+                </div>
+            </div>
+
+            <!-- Full Width Row: ML Features Report -->
+            <div class="p-6 md:p-8 border-t border-slate-700">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-b border-slate-700 pb-2">
+                    <i class="fa-solid fa-microchip text-indigo-400"></i> Complete Analysis Parameters (ML Model Extract)
+                </h3>
+                <div id="ml-parameters-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- ML Parameters injected here -->
                 </div>
             </div>
             
@@ -237,6 +273,13 @@
             // (WHOIS populate removed to support instant ML predictions)
 
             // Flags list
+            // WHOIS populate
+            document.getElementById('domain-age').textContent = data.whois_summary.domain_age;
+            document.getElementById('domain-registrar').textContent = data.whois_summary.registrar;
+            document.getElementById('domain-country').textContent = data.whois_summary.country;
+            document.getElementById('domain-source').textContent = data.whois_summary.data_source;
+
+            // Flags list
             const flagsList = document.getElementById('risk-flags-list');
             flagsList.innerHTML = '';
             
@@ -256,6 +299,20 @@
                         <span class="text-sm font-medium">No suspicious indicators detected</span>
                     </li>
                 `;
+            }
+
+            // Parameters Report
+            const paramGrid = document.getElementById('ml-parameters-grid');
+            paramGrid.innerHTML = '';
+            if(data.parameters) {
+                for (const [key, val] of Object.entries(data.parameters)) {
+                    paramGrid.innerHTML += `
+                        <div class="bg-slate-900/60 border border-slate-700/50 p-3 rounded text-sm">
+                            <div class="text-slate-400 text-xs mb-1 tracking-wider uppercase">${key}</div>
+                            <div class="font-mono text-slate-200 font-medium">${typeof val === 'number' && !Number.isInteger(val) ? val.toFixed(3) : val}</div>
+                        </div>
+                    `;
+                }
             }
             
             // Scroll to result smoothly
