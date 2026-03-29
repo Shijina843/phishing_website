@@ -1,0 +1,206 @@
+"""
+app.py
+======
+Flask backend for Phishing URL Detection System.
+Handles both API endpoint for prediction and the frontend application.
+"""
+
+import os
+import sqlite3
+import datetime
+from pathlib import Path
+from flask import Flask, request, jsonify, render_template
+
+import joblib
+import pandas as pd
+import numpy as np
+
+# Adjust python path to import our custom feature extractor module
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model'))
+
+from feature_extractor import extract_features, MODEL_FEATURE_COLUMNS, CONTINUOUS_COLUMNS
+
+app = Flask(__name__)
+
+# --- SQLite Database Initialization ---
+DB_NAME = "history.db"
+
+def init_db():
+    """Initializes the SQLite database used for storing scan history."""
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS scans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT,
+            verdict TEXT,
+            confidence REAL,
+            timestamp TEXT,
+            risk_flags TEXT,
+            domain_age INTEGER,
+            registrar TEXT,
+            country TEXT,
+            data_source TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# --- Model Loading at Startup ---
+MODEL_DIR = Path(__file__).resolve().parent / 'model'
+try:
+    with open(MODEL_DIR / 'model.pkl', 'rb') as f:
+        model = joblib.load(f)
+    with open(MODEL_DIR / 'scaler.pkl', 'rb') as f:
+        scaler = joblib.load(f)
+    print("✅ Model and Scaler loaded successfully.")
+except FileNotFoundError:
+    print("⚠️ WARNING: model.pkl or scaler.pkl missing. Predictions won't work unless trained.")
+    model = None
+    scaler = None
+
+# --- Risk Flag Engine (Layer 9) ---
+def compute_risk_flags(features: dict) -> list[str]:
+    """Calculate rule-based flags from the extracted features."""
+    flags = []
+    
+    # Layer 9 Rules
+    if features.get('_whitelisted', False):
+        # Whitelist hit -> clear all flags
+        return flags
+        
+    if features.get('domain_age_days', -1) != -1 and features.get('domain_age_days', 999) < 30:
+        flags.append("Domain too new")
+        
+    if features.get('has_mx_record', 0) == 0:
+        flags.append("No MX record")
+        
+    if features.get('tld_suspicious', 0) == 1:
+        flags.append("Suspicious TLD")
+        
+    if features.get('has_ip', 0) == 1:
+        flags.append("IP used instead of domain")
+        
+    if features.get('whois_available', -1) == 0:
+        flags.append("WHOIS data unavailable")
+        
+    return flags
+
+# --- Routes ---
+
+@app.route("/", methods=["GET"])
+def index():
+    """Render the single-page interface."""
+    return render_template("index.html")
+
+@app.route("/history", methods=["GET"])
+def get_history():
+    """Return the last 10 scans from the local DB."""
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute('SELECT * FROM scans ORDER BY id DESC LIMIT 10')
+        rows = c.fetchall()
+        history = [dict(ix) for ix in rows]
+        conn.close()
+        return jsonify({"history": history}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    """
+    Accepts a URL via JSON POST, runs feature extraction, prediction,
+    and returns a summarized JSON record.
+    """
+    if not model or not scaler:
+        return jsonify({"error": "Model not loaded. Please train the model first."}), 500
+        
+    data = request.json
+    if not data or not data.get("url"):
+        return jsonify({"error": "No URL provided"}), 400
+        
+    url = data["url"]
+    
+    try:
+        # 1. Feature Extraction
+        feats = extract_features(url, enable_network=True)
+        
+        flags = compute_risk_flags(feats)
+        
+        # Format features into DataFrame to feed the model
+        df_new = pd.DataFrame([feats])
+        
+        # Make a copy to scale continuous vars
+        X_infer = df_new[MODEL_FEATURE_COLUMNS].copy()
+        
+        X_infer[CONTINUOUS_COLUMNS] = scaler.transform(X_infer[CONTINUOUS_COLUMNS])
+        
+        # 2. Prediction Model
+        # Predict probability of class 1 (Phishing)
+        y_prob = model.predict_proba(X_infer)[0, 1]
+        
+        confidence = float(y_prob) * 100
+        
+        # 3. Verdict threshold (Layer 9 score zones)
+        if feats.get('_whitelisted', False):
+            verdict = "LEGITIMATE"
+            confidence = 100.0 if y_prob < 0.5 else 0.0 # Just cosmetic
+        else:
+            if y_prob < 0.40:
+                verdict = "LEGITIMATE"
+            elif y_prob <= 0.65:
+                verdict = "SUSPICIOUS"
+            else:
+                verdict = "PHISHING"
+                
+        # Prepare response
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        response_data = {
+            "url": url,
+            "verdict": verdict,
+            "confidence": round((confidence if verdict != "LEGITIMATE" or feats.get('_whitelisted') else (100 - confidence)), 2),
+            "timestamp": timestamp,
+            "risk_flags": flags,
+            "whois_summary": {
+                "domain_age": feats.get('domain_age_days', 'Unknown') if feats.get('domain_age_days', -1) != -1 else 'Unknown',
+                "registrar": feats.get('registrar_name', 'Unknown'),
+                "country": feats.get('country', 'Unknown'),
+                "data_source": feats.get('data_source', 'unavailable')
+            }
+        }
+        
+        # 4. Save to Database
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO scans 
+            (url, verdict, confidence, timestamp, risk_flags, domain_age, registrar, country, data_source) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            response_data["url"],
+            response_data["verdict"],
+            response_data["confidence"],
+            response_data["timestamp"],
+            ", ".join(flags),
+            str(response_data["whois_summary"]["domain_age"]),
+            response_data["whois_summary"]["registrar"],
+            response_data["whois_summary"]["country"],
+            response_data["whois_summary"]["data_source"]
+        ))
+        conn.commit()
+        conn.close()
+        
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
