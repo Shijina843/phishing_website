@@ -283,6 +283,24 @@
             const flagsList = document.getElementById('risk-flags-list');
             flagsList.innerHTML = '';
             
+            let dAge = String(data.whois_summary.domain_age).toLowerCase();
+            let dReg = String(data.whois_summary.registrar).toLowerCase();
+            let dCty = String(data.whois_summary.country).toLowerCase();
+            let isUnknown = (dAge === 'unknown' || dAge === '-1') && dReg === 'unknown' && dCty === 'unknown';
+
+            if (data.is_top1m) {
+                let msg = "One of the Most Visited Websites (Top 1M List)";
+                if (isUnknown) {
+                    msg += " - Domain is highly trusted even though WHOIS details are Unknown.";
+                }
+                flagsList.innerHTML += `
+                    <li class="flex items-start gap-3 text-cyan-400 bg-cyan-900/20 px-4 py-3 rounded-lg border border-cyan-900/50 shadow-inner">
+                        <i class="fa-solid fa-trophy mt-1"></i>
+                        <span class="text-sm font-medium">${msg}</span>
+                    </li>
+                `;
+            }
+
             if(data.risk_flags && data.risk_flags.length > 0) {
                 data.risk_flags.forEach(flag => {
                     flagsList.innerHTML += `
@@ -293,7 +311,7 @@
                     `;
                 });
             } else {
-                flagsList.innerHTML = `
+                flagsList.innerHTML += `
                     <li class="flex items-center gap-3 text-emerald-400 bg-emerald-900/20 px-4 py-3 rounded-lg border border-emerald-900/50 shadow-inner block">
                         <i class="fa-solid fa-check-circle"></i>
                         <span class="text-sm font-medium">No suspicious indicators detected</span>

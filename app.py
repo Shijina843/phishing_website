@@ -149,23 +149,38 @@ def predict():
         whois_data = get_whois_features(domain_for_whois) if domain_for_whois else {}
         
         # --- NEW OVERRIDE: WHOIS Failure Penalty ---
-        # If WHOIS fails and it's NOT a mathematically whitelisted domain
-        if whois_data.get('whois_status', 'failed') == 'failed' and not feats.get('_whitelisted', False):
-            confidence += 48.0
-            confidence = min(confidence, 100.0) # Cap at 100%
-            flags.append("WHOIS Data Hidden/Blocked")
+        is_top1m = feats.get('_whitelisted', False)
+        whois_failed = (whois_data.get('whois_status', 'failed') == 'failed')
+        
+        age_unknown = (whois_data.get('domain_age_days', -1) == -1 or str(whois_data.get('domain_age_days', '')).lower() == 'unknown')
+        reg_unknown = (str(whois_data.get('registrar_name', 'unknown')).lower() == 'unknown')
+        cntry_unknown = (str(whois_data.get('country', 'unknown')).lower() == 'unknown')
+        
+        unknown_fields = sum([age_unknown, reg_unknown, cntry_unknown])
+
+        if is_top1m:
+            confidence = 0.0 # Base confidence for mathematically whitelisted domains
+            if whois_failed or unknown_fields == 3:
+                confidence += 25.0
+                flags.append("Domain in Top 1M but WHOIS Data Unavailable")
+        else:
+            if unknown_fields > 0:
+                penalty = unknown_fields * 16.0
+                confidence += penalty
+                flags.append(f"Missing {unknown_fields} WHOIS record(s)")
+            elif whois_failed:
+                confidence += 48.0
+                flags.append("WHOIS Data Hidden/Blocked")
+        
+        confidence = min(confidence, 100.0) # Cap at 100%
             
         # 3. Verdict threshold (Layer 9 score zones)
-        if feats.get('_whitelisted', False):
+        if confidence < 40.0:
             verdict = "LEGITIMATE"
-            confidence = 0.0 # Threat score is 0 if mathematically whitelisted
+        elif confidence <= 65.0:
+            verdict = "PARTIALLY VULNERABLE"
         else:
-            if confidence < 40.0:
-                verdict = "LEGITIMATE"
-            elif confidence <= 65.0:
-                verdict = "PARTIALLY VULNERABLE"
-            else:
-                verdict = "PHISHING"
+            verdict = "PHISHING"
         
         # Prepare response
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -182,7 +197,8 @@ def predict():
                 "registrar": whois_data.get('registrar_name', 'Unknown'),
                 "country": whois_data.get('country', 'Unknown'),
                 "data_source": 'Live WHOIS Lookup'
-            }
+            },
+            "is_top1m": bool(feats.get('_whitelisted', False))
         }
         
         # 4. Save to Database
